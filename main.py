@@ -1,9 +1,29 @@
 import sys
 from io import BytesIO
-from get_map_params import get_maps_params
+from pprint import pprint
+
+from get_map_params import get_scaling
 
 import requests
 from PIL import Image
+
+
+def get_maps_params(json_response):
+    toponym = json_response["response"]["GeoObjectCollection"]["featureMember"][0]["GeoObject"]
+    toponym_coodrinates = toponym["Point"]["pos"]
+    toponym_longitude, toponym_lattitude = toponym_coodrinates.split(" ")
+    org_point = f"{toponym_longitude},{toponym_lattitude}"
+
+    apikey = "f3a0fe3a-b07e-4840-a1da-06f18b2ddf13"
+
+    map_params = {
+        "ll": ",".join([toponym_longitude, toponym_lattitude]),
+        "spn": get_scaling(toponym),
+        "apikey": apikey,
+        'pt': "{0},pm2dgl".format(org_point)
+    }
+
+    return map_params
 
 
 def get_toponym():
@@ -29,6 +49,7 @@ def get_toponym():
 
 def main():
     json_response = get_toponym()
+    pprint(json_response)
     map_params = get_maps_params(json_response)
     map_api_server = "https://static-maps.yandex.ru/v1"
     response = requests.get(map_api_server, params=map_params)
