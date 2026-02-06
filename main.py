@@ -2,7 +2,7 @@ import sys
 from io import BytesIO
 from pprint import pprint
 
-from get_map_params import get_scaling
+from get_scaling import get_scaling
 
 import requests
 from PIL import Image
