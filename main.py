@@ -12,7 +12,10 @@ from PyQt6.QtWidgets import QMainWindow, QLabel, QWidget, QVBoxLayout, QApplicat
 load_dotenv()
 
 class MapParams(BaseModel):
-    ll:
+    ll: str
+    spn: str
+    apikey: str
+
 
 class Window(QMainWindow):
     def __init__(self):
@@ -31,7 +34,7 @@ class Window(QMainWindow):
         self.scale: int = 1
         self.delta = [0, 0]
 
-        self.map_params = self.load_map_params('Байкал')
+        self.map_params: MapParams = MapParams(**self.load_map_params('Байкал'))
 
         self.update_map()
 
@@ -48,11 +51,16 @@ class Window(QMainWindow):
         return ",".join(str(x) for x in [toponym_longitude, toponym_lattitude])
 
     def update_map(self):
-        pixmap = self.get_map(self.map_params)
+        pixmap = self.get_map(self.get_current_params())
         self.set_pixmap(pixmap)
 
-    def update_params(self):
-
+    def get_current_params(self):
+        params = self.map_params.model_copy()
+        ll = list(map(float, self.map_params.ll.split(',')))
+        spn = list(map(float, self.map_params.spn.split(',')))
+        params.ll = ','.join(str(x + i) for x, i in zip(ll, self.delta))
+        params.spn = ','.join(str(x * self.scale) for x in spn)
+        return params
 
     def load_map_params(self, name):
         geocoder_api_server = "http://geocode-maps.yandex.ru/1.x/"
@@ -90,19 +98,19 @@ class Window(QMainWindow):
             self.update_map()
         if key == Qt.Key.Key_Left:
             if self.delta[0] < 180:
-                self.delta[0] -= 10
+                self.delta[0] -= 1
                 self.update_map()
         if key == Qt.Key.Key_Right:
             if self.delta[0] > -180:
-                self.delta[0] += 10
+                self.delta[0] += 1
                 self.update_map()
         if key == Qt.Key.Key_Up:
             if self.delta[1] < 90:
-                self.delta[1] += 10
+                self.delta[1] += 1
                 self.update_map()
         if key == Qt.Key.Key_Down:
             if self.delta[1] > -90:
-                self.delta[1] -= 10
+                self.delta[1] -= 1
                 self.update_map()
 
 
