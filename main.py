@@ -15,6 +15,7 @@ class MapParams(BaseModel):
     ll: str
     spn: str
     apikey: str
+    theme: str
 
 
 class Window(QMainWindow):
@@ -31,6 +32,7 @@ class Window(QMainWindow):
         self.label = QLabel()
         layout.addWidget(self.label)
 
+        self.theme: str = 'dark'
         self.scale: int = 1
         self.delta = [0, 0]
 
@@ -60,6 +62,7 @@ class Window(QMainWindow):
         spn = list(map(float, self.map_params.spn.split(',')))
         params.ll = ','.join(str(x + i) for x, i in zip(ll, self.delta))
         params.spn = ','.join(str(x * self.scale) for x in spn)
+        params.theme = self.theme
         return params
 
     def load_map_params(self, name):
@@ -73,7 +76,8 @@ class Window(QMainWindow):
         params = {
             'spn' : self.get_scaling(toponym),
             'll': self.get_coords(toponym),
-            'apikey': os.getenv("API_KEY")
+            'apikey': os.getenv("API_KEY"),
+            'theme': self.theme
         }
         return params
 
