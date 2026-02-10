@@ -1,14 +1,16 @@
+import os
 import sys
+from io import BytesIO
 
-import PyQt6
-import requests
-from PyQt6 import uic
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QPixmap
-from PyQt6.QtWidgets import QMainWindow, QApplication, QWidget, QVBoxLayout, QLabel
+from load_dotenv import load_dotenv
+import requests
+from PyQt6.QtGui import QPixmap, QImage
+from PyQt6.QtWidgets import QMainWindow, QLabel, QWidget, QVBoxLayout, QApplication
 
-MAP_FILE = "map.png"
+from get_scaling import get_scaling, get_coords
 
+load_dotenv()
 
 class Window(QMainWindow):
     def __init__(self):
@@ -24,52 +26,48 @@ class Window(QMainWindow):
         self.label = QLabel()
         layout.addWidget(self.label)
 
-        self.setGeometry(300, 300, 500, 400)
-        self.ll = "149,-35"
-        self.spn = "50,50"
-        self.init_ui()
+        self.scale: int = 1
 
-    def init_ui(self):
-        self.get_image()
-        pass
+        self.load_map()
 
-    def get_image(self):
-        server_address = 'https://static-maps.yandex.ru/v1?'
-        api_key = 'f3a0fe3a-b07e-4840-a1da-06f18b2ddf13'
-        ll_spn = f'll={self.ll}&spn={self.spn}'
+    def load_map(self):
+        map_params = self.get_map_params('Байкал', self.scale)
+        self.get_map(map_params)
 
-        map_request = f"{server_address}{ll_spn}&apikey={api_key}"
-        response = requests.get(map_request)
+    def get_map_params(self, name, scale):
+        geocoder_api_server = "http://geocode-maps.yandex.ru/1.x/"
+        geocoder_params = {
+            "apikey": "8013b162-6b42-4997-9691-77b7074026e0",
+            "geocode": name,
+            "format": "json"}
+        response = requests.get(geocoder_api_server, params=geocoder_params).json()
+        toponym = response["response"]["GeoObjectCollection"]["featureMember"][0]["GeoObject"]
+        params = {
+            'spn' : get_scaling(toponym, scale),
+            'll': get_coords(toponym),
+            'apikey': os.getenv("API_KEY")
+        }
+        return params
 
-        if not response:
-            print("Ошибка выполнения запроса:")
-            print(map_request)
-            print("Http статус:", response.status_code, "(", response.reason, ")")
-            sys.exit(1)
-
-        with open(MAP_FILE, "wb") as file:
-            file.write(response.content)
-
-        pixmap = QPixmap("map.png")
-
-        if pixmap.isNull():
-            print("Ошибка: не удалось загрузить изображение. Проверьте путь.")
-            return
-
+    def set_pixmap(self, pixmap):
         self.label.setPixmap(pixmap)
+
+    def get_map(self, map_params):
+        map_api_server = "https://static-maps.yandex.ru/v1"
+        response = requests.get(map_api_server, params=map_params)
+        im = BytesIO(response.content).getvalue()
+        opened_image = QImage.fromData(im)
+        pixmap = QPixmap.fromImage(opened_image)
+        self.set_pixmap(pixmap)
 
     def keyPressEvent(self, event):
         key = event.key()
         if key == Qt.Key.Key_PageUp:
-            x = list(map(int, self.spn.split(",")))[0]
-            if x > 10:
-                self.spn = f"{x - 10},{x - 10}"
-                self.get_image()
+            self.scale -= 0.1
+            self.load_map()
         if key == Qt.Key.Key_PageDown:
-            x = list(map(int, self.spn.split(",")))[0]
-            if x < 80:
-                self.spn = f"{x + 10},{x + 10}"
-                self.get_image()
+            self.scale += 0.1
+            self.load_map()
 
 
 if __name__ == '__main__':
@@ -77,4 +75,3 @@ if __name__ == '__main__':
     window = Window()
     window.show()
     sys.exit(app.exec())
-    
