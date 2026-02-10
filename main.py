@@ -111,3 +111,34 @@ if __name__ == '__main__':
     window = Window()
     window.show()
     sys.exit(app.exec())
+
+
+
+    def keyPressEvent(self, event):
+        key = event.key()
+        if key == Qt.Key.Key_PageUp:
+            x = self.spn[0]
+            if x > 10:
+                self.spn = [x - 10, x - 10]
+                self.get_image()
+        if key == Qt.Key.Key_PageDown:
+            x = self.spn[0]
+            if x > 10:
+                self.spn = [x + 10, x + 10]
+                self.get_image()
+        if key == Qt.Key.Key_Left:
+            if self.ll[0] > -180:
+                self.ll[0] -= 1
+                self.get_image()
+        if key == Qt.Key.Key_Right:
+            if self.ll[0] > -180:
+                self.ll[0] += 1
+                self.get_image()
+        if key == Qt.Key.Key_Up:
+            if self.ll[1] < 90:
+                self.ll[1] += 1
+                self.get_image()
+        if key == Qt.Key.Key_Down:
+            if self.ll[1] > -90:
+                self.ll[1] -= 1
+                self.get_image()
